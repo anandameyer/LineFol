@@ -2,15 +2,67 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
-#define sensL PIND&0x01 //sensor kiri pin PD0
-#define sensR PINC&0x01 //sensor kanan pin PC0
+#define hidup true
 
 
-void main (void)
+#define p1 0x01
+#define p2 0x02
+#define p3 0x04
+#define p4 0x08
+#define p5 0x10
+#define p6 0x20
+#define p7 0x40
+#define p8 0x80
+#define nol 0x00
+
+
+#define A DDRA
+#define B DDRB
+#define C DDRC
+#define D DDRD
+
+#define pA PORTA
+#define pB PORTB
+#define pC PORTC
+#define pD PORTD
+
+class pin_select(){
+public:
+int io(a=nol,b=nol,c=nol,d=nol,e=nol,f=nol,g=nol,h=nol){
+	return a|=b|=c|=d|=e|=f|=g|=h;
+};
+void out(port,pin,status){
+if(status == true)
 {
-	uint8_t LSENS,RSENS,L,R,S,F; //variabel untuk menampung nilai sensor
+	return port|=pin;
+}
+else{
+	return port^=pin;
+};
+
+}
+void ~io();
+private:
+uint8_t a, b, c, d, e, f, g, h,port,pin;
+bool status;
+};
+
+/*8		4		2		1		8		4		2		1*/
+
+void main ()
+{
+	uint8_t LSENS,RSENS,L,R,S,F,sensor,motor; //variabel untuk menampung nilai sensor
 	LSENS = RSENS = L = R = S = F = 0;
-	DDRA = 0xff;		 //Set semua Pin PA menjadi Output
+	
+	pin_select pilih;
+	sensor = pilih.io(p1,p2,p3,p4);
+	input(C,sensor);
+	
+	motor = pilih.io(p5,p6,p7,p8);
+	output(A,motor);
+	
+	out(motor,)
+	
 	PORTA = 0x00;		 //Set semua Pin PA menjadi output low
 	DDRD = 0x00;		 //Set semua Pin PD menjadi input
 	DDRC = 0x00;
