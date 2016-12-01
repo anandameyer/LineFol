@@ -1,9 +1,11 @@
 #define F_CPU 16000000
-#include <avr/io.h>
+#include <avr/inOut.h>
 #include <util/delay.h>
 
 #define hidup true
-
+#define mati false
+#define high 1
+#define low 0
 
 #define p1 0x01
 #define p2 0x02
@@ -14,6 +16,9 @@
 #define p7 0x40
 #define p8 0x80
 #define nol 0x00
+
+#define input(port,value) port=(!value)
+#define output(port,value) port=value
 
 
 #define A DDRA
@@ -26,109 +31,81 @@
 #define pC PORTC
 #define pD PORTD
 
-class pin_select(){
-public:
-int io(a=nol,b=nol,c=nol,d=nol,e=nol,f=nol,g=nol,h=nol){
-	return a|=b|=c|=d|=e|=f|=g|=h;
-};
-void out(port,pin,status){
-if(status == true)
-{
-	return port|=pin;
-}
-else{
-	return port^=pin;
-};
+#define inA PINA
+#define inB PINB
+#define inC PINC
+#define inD PIND
 
-}
-void ~io();
-private:
 uint8_t a, b, c, d, e, f, g, h,port,pin;
 bool status;
-};
 
-/*8		4		2		1		8		4		2		1*/
-
-void main ()
-{
-	uint8_t LSENS,RSENS,L,R,S,F,sensor,motor; //variabel untuk menampung nilai sensor
-	LSENS = RSENS = L = R = S = F = 0;
+int8_t inOut(a=nol,b=nol,c=nol,d=nol,e=nol,f=nol,g=nol,h=nol)
+	{
+		return a|=b|=c|=d|=e|=f|=g|=h;
+	}
 	
-	pin_select pilih;
-	sensor = pilih.io(p1,p2,p3,p4);
+int8_t out(port,pin,status)
+	{
+		if(status)
+		{
+			return port|=pin;
+		}
+		else
+		{
+			return port^=pin;
+		}
+	}
+	
+uint8_t in(port,pin)
+	{
+		return port&pin;
+	}
+
+
+
+void main (void)
+{
+	uint8_t kiri, kanan, maju, sensor, sensor_dalam, sensor_luar, sensor_kiri, sensor_kanan, motor;
+	sensor = inOut(p1,p2,p3,p4);
 	input(C,sensor);
 	
-	motor = pilih.io(p5,p6,p7,p8);
+	sensor_dalam = inOut(p2,p3);
+	sensor_luar = inOut(p1,p4);
+	sensor_kiri = inOut(p1,p2);
+	sensor_kanan = inOut(p3,p4);
+	
+	motor = inOut(p5,p6,p7,p8);
 	output(A,motor);
 	
-	out(motor,)
+	kiri = inOut(p2,p3);
+	kanan = inOut(p1,p4);
+	maju = inOut(p1,p3);
 	
-	PORTA = 0x00;		 //Set semua Pin PA menjadi output low
-	DDRD = 0x00;		 //Set semua Pin PD menjadi input
-	DDRC = 0x00;
+	out(pA,motor,mati);
+	
 	while(1)			 //Intruksi yang akan di jalankan secara berulang-ulang
 	{
-		LSENS = (sensL);//mengisi variabel dengan hasil baca digital input sensor
-		_delay_ms(50);
-		RSENS = (sensR);
 		
-		while((LSENS == 0) && (RSENS == 0)) //kondisi melaju
+		if(in(inC,sensor) == low || (in(inC,sensor_dalam) == low && in(inC,sensor_luar) == high))
 		{
-			if ( L == 1 || R == 1 || S == 1 )
-			{
-				PORTA &= 0x00;
-			}
-			else 
-			{
-				PORTA |= 0b00000101; //Memberikan nilai output high pada pin PA
-				_delay_ms(50);
-			}
-			
-			F = 1;
-			L = R = S = 0;
-			break;
-		}
+			out(pA,maju,hidup);
+		};
 		
-		while((LSENS == 1) && (RSENS == 0)) //kondisi belok kanan
+		if(in(inC,sensor_kiri) == low || in(inC,sensor_kanan) == low)
 		{
-			if ( L == 1 || F == 1 || S == 1 )
+			if(in(inC,sensor_kiri) == low)
 			{
-				PORTA &= 0x00;		 //set semua pin PA menjadi low
-				_delay_ms(10);
-			}
-			else
+				out(pA,motor,hidup);
+			};
+			if(in(inC,sensor_kanan) == low)
 			{
-				PORTA |= 0b00001001;
-				_delay_ms(10);
-			}
-			R = 1;
-			L = F = S = 0;
-			break;
-		}
+				out(pA,motor,hidup);
+			};
+		};
 		
-		while((LSENS == 0) && (RSENS == 1)) //kondisi belok kiri
+		if(in(inC,sensor) == high)
 		{
-			if( R == 1 || F == 1 || S == 1)
-			{
-				PORTA &= 0x00;
-				_delay_ms(10);
-			}
-			else
-			{
-				PORTA |= 0b00000110;
-				_delay_ms(10);
-			}
-			L = 1;
-			R = F = S = 0;
-			break;
-		}
-		
-		while((LSENS == 1) && (RSENS == 1)) //kondisi berhenti
-		{
-			PORTA &= 0x00;
-			_delay_ms(50);
-			break;
-		}
-		
+			out(pA,motor,mati);
+		};
 	}
 }
