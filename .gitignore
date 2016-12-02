@@ -50,3 +50,11 @@ Temporary Items
 *.bak
 *.pnps
 .dep
+*.hex
+*.eep
+*.o
+*.elf
+*.lss
+*.lst
+*.map
+*.sym

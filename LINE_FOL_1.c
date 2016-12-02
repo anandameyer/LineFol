@@ -1,11 +1,7 @@
-#define F_CPU 16000000
-#include <avr/inOut.h>
+#include <avr/io.h>
 #include <util/delay.h>
 
-#define hidup true
-#define mati false
-#define high 1
-#define low 0
+#define F_CPU 16000000
 
 #define p1 0x01
 #define p2 0x02
@@ -17,95 +13,119 @@
 #define p8 0x80
 #define nol 0x00
 
-#define input(port,value) port=(!value)
-#define output(port,value) port=value
-
-
 #define A DDRA
 #define B DDRB
 #define C DDRC
 #define D DDRD
 
-#define pA PORTA
-#define pB PORTB
-#define pC PORTC
-#define pD PORTD
+#define OUTPUT 0x01
+#define INPUT 0x00
+#define SINGLE 0x02
 
-#define inA PINA
-#define inB PINB
-#define inC PINC
-#define inD PIND
-
-uint8_t a, b, c, d, e, f, g, h,port,pin;
-bool status;
-
-int8_t inOut(a=nol,b=nol,c=nol,d=nol,e=nol,f=nol,g=nol,h=nol)
-	{
-		return a|=b|=c|=d|=e|=f|=g|=h;
-	}
-	
-int8_t out(port,pin,status)
-	{
-		if(status)
-		{
-			return port|=pin;
-		}
-		else
-		{
-			return port^=pin;
-		}
-	}
-	
-uint8_t in(port,pin)
-	{
-		return port&pin;
-	}
+#define HIGH 0x01
+#define LOW 0x00
 
 
+unsigned int a, b, c, d, e, f, g, h;
+int pin,mode,state;
+char port;
 
-void main (void)
+int io(mode,a, b, c, d, e, f, g, h)
 {
-	uint8_t kiri, kanan, maju, sensor, sensor_dalam, sensor_luar, sensor_kiri, sensor_kanan, motor;
-	sensor = inOut(p1,p2,p3,p4);
-	input(C,sensor);
+	if(mode == 1 || mode == 2)
+	{
+		return a | b | c | d | e | f | g | h;
+	}
+	else if(mode == 0)
+	{
+			
+		return (~a) | (~b) | (~c) | (~d) | (~e) | (~f) | (~g) | (~h);
+	}
+}
 	
-	sensor_dalam = inOut(p2,p3);
-	sensor_luar = inOut(p1,p4);
-	sensor_kiri = inOut(p1,p2);
-	sensor_kanan = inOut(p3,p4);
+int setMode(port, pin)
+	{
+			if(port == 'A'){return DDRA = pin;}
+			else if(port == 'B'){return DDRB = pin;}
+			else if(port == 'C'){return DDRC = pin;}
+			else if(port == 'D'){return DDRD = pin;}
+	}
 	
-	motor = inOut(p5,p6,p7,p8);
-	output(A,motor);
+int readIO(port, pin)
+	{
+		if(port == 'A'){return PINA & pin;}
+		else if(port == 'B'){return PINB & pin;}
+		else if(port == 'C'){return PINC & pin;}
+		else if(port == 'D'){return PIND & pin;}
+	}
 	
-	kiri = inOut(p2,p3);
-	kanan = inOut(p1,p4);
-	maju = inOut(p1,p3);
+int writeIO(port,pin,state)		
+	{
+		if(state == 1)
+		{
+			if(port == 'A'){return PORTA = pin;}
+			else if(port == 'B'){return PORTB = pin;}
+			else if(port == 'C'){return PORTC = pin;}
+			else if(port == 'D'){return PORTD = pin;}
+		}
+			
+		if(state == 0)
+		{
+			if(port == 'A'){return PORTA = ~pin;}
+			else if(port == 'B'){return PORTB = ~pin;}
+			else if(port == 'C'){return PORTC = ~pin;}
+			else if(port == 'D'){return PORTD = ~pin;}
+		}
+	}
 	
-	out(pA,motor,mati);
 	
-	while(1)			 //Intruksi yang akan di jalankan secara berulang-ulang
+
+void main ()
+{
+	int TLeft, TRight, MForward, center, outer, left, right, sensor, motor, STOP, all;
+	sensor = io(INPUT,p1,p2,p3,p4);
+	setMode('C',sensor);
+	
+	center = io(SINGLE,p2,p3);
+	outer = io(SINGLE,p1,p4);
+	left = io(SINGLE,p1,p2);
+	right = io(SINGLE,p3,p4);
+	all = io(SINGLE,p1,p2,p3,p4);
+	
+	motor = io(OUTPUT,p5,p6,p7,p8);
+	setMode('A',motor);
+	
+	TLeft = io(SINGLE,p2,p3);
+	TRight = io(SINGLE,p1,p4);
+	MForward = io(SINGLE,p1,p3);
+	STOP = io(SINGLE,p1,p2,p3,p4);
+	
+	writeIO('A',motor,LOW);
+	
+	while(1)
 	{
 		
-		if(in(inC,sensor) == low || (in(inC,sensor_dalam) == low && in(inC,sensor_luar) == high))
+		if(readIO('C',center) == LOW || (readIO('C',center) == LOW && readIO('C',outer) == HIGH))
 		{
-			out(pA,maju,hidup);
+			writeIO('A',MForward,HIGH);
 		};
 		
-		if(in(inC,sensor_kiri) == low || in(inC,sensor_kanan) == low)
+		if(readIO('C',left) == LOW || readIO('C',right) == LOW)
 		{
-			if(in(inC,sensor_kiri) == low)
+			if(readIO('C',left) == LOW)
 			{
-				out(pA,motor,hidup);
-			};
-			if(in(inC,sensor_kanan) == low)
+				writeIO('A',TLeft,HIGH);
+			}
+			
+			if(readIO('C',right) == LOW)
 			{
-				out(pA,motor,hidup);
-			};
-		};
+				writeIO('A',TRight,HIGH);
+			}	
+		}
 		
-		if(in(inC,sensor) == high)
+		if(readIO('C',all) == HIGH)
 		{
-			out(pA,motor,mati);
+			writeIO('A',STOP,LOW);
 		};
 	}
 }
